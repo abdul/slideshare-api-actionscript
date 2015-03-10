@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" height="218">
+	<mx:Style>
+		.heading
+		{
+			fontSize:12;
+			fontWeight:bold;
+		}
+	</mx:Style>
+	<mx:HBox>
+		<mx:Label text="File:" styleName="heading" width="50" height="20"/>
+		<mx:TextInput text="{data.fileName}" width="100%"/>
+	</mx:HBox>
+	<mx:HBox>
+		<mx:Label text="Title:" styleName="heading" width="50" height="20"/>
+		<mx:TextInput id="title" width="159"/>
+	</mx:HBox>
+	<mx:HBox>
+		<mx:Label text="Tags:" styleName="heading" width="50" height="20"/>
+		<mx:TextInput id="tags" width="100%"/>
+	</mx:HBox>
+	<mx:HBox>
+		<mx:Label text="Description:" styleName="heading" width="50" height="20"/>
+		<mx:TextArea id="description" width="100%" height="100"/>
+	</mx:HBox>
+		<mx:HBox>
+		<mx:CheckBox id="isPublic" styleName="heading" label="Public" selected="true"/>
+	</mx:HBox>
+</mx:VBox>

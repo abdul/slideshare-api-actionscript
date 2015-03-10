@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="appCreationCompleteHandler()" width="1154" height="670">
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.SWFLoader;
+			import com.abdulqabiz.webapis.slideshare.events.SlideShareFaultEvent;
+			import mx.events.ListEvent;
+			import mx.utils.ObjectUtil;
+			import com.abdulqabiz.webapis.slideshare.events.SlideShareResultEvent;
+			import com.abdulqabiz.webapis.slideshare.*;
+			import flash.system.Security;
+			import mx.collections.ArrayCollection;
+			
+			var ssService:SlideShareService;
+			var fileReference:FileReference;
+			private var swfLoader:SWFLoader;
+			private function appCreationCompleteHandler ():void
+			{
+				ssService  = new SlideShareService ("<api_key>", "<api_secret>");
+				ssService.addEventListener(SlideShareResultEvent.SLIDESHOW_BY_USER, slideShareResultHander);
+				ssService.addEventListener(SlideShareResultEvent.SLIDESHOW_BY_TAG, slideShareResultHander);
+				ssService.addEventListener(SlideShareResultEvent.SLIDESHOW_FROM_GROUP, slideShareResultHander);
+				ssService.addEventListener (SlideShareResultEvent.SLIDESHOW_UPLOAD, slideShowUploadHandler);
+				ssService.addEventListener(SlideShareFaultEvent.ERROR, slideShareFaultHandler);
+				
+				//ssService.getSlideShowByUser("rashmi");
+				Security.allowDomain("s3.amazonaws.com");
+				
+				
+				slideList.labelFunction = function (v:Object)
+				{
+					trace (v.title);
+					return v.title;
+				}
+							
+			}
+			
+			private function slideShowUploadHandler (event:SlideShareResultEvent):void
+			{
+				logMessage ("Uploaded succedded - SlideShowID is " + event.data)
+			}
+			private function slideShareResultHander (event:SlideShareResultEvent):void
+			{
+					
+				slideList.dataProvider = event.data;							
+				
+			}
+			
+			private function slideShareFaultHandler (event:SlideShareFaultEvent):void
+			{
+				logMessage (event.errorCode + ": " + event.errorMessage);
+			}
+			private function select ():void
+			{
+				fileReference = new FileReference ();
+				fileReference.addEventListener(Event.SELECT, selectHandler);
+				fileReference.browse();
+				
+			}
+			private function selectHandler (event:Event):void
+			{
+				detailsForm.visible = true;
+			}
+			private function upload ():void
+			{
+				if (userName.text != "" && password.text != "" && title.text != "")
+				{
+					var metadata:SlideShowMetadata = new SlideShowMetadata ();
+					metadata.title = title.text;
+					metadata.description = description.text;
+					metadata.tags = tags.text;
+					ssService.uploadFile (fileReference, metadata, userName.text, password.text);
+					detailsForm.visible = false;
+				}
+				else
+				{
+					
+				}
+			}
+			
+			private function logMessage (msg:String):void
+			{
+				trace (msg);
+				console.text += msg + "\n";
+			}
+			private function search ():void
+			{
+				trace (criteriaCombo.selectedLabel);
+				switch (criteriaCombo.selectedLabel.toLowerCase())
+				{
+					case "user":
+						ssService.getSlideShowByUser(criteriaText.text);
+					break;
+					case "group":
+						ssService.getSlideShowFromGroup(criteriaText.text);
+					break;
+					case "tag":
+						ssService.getSlideShowByTag(criteriaText.text);
+					break;
+				}
+				
+			}
+			private function loadSlide (event:ListEvent):void
+			{
+				
+				var o = slideList.selectedItem;
+				var x = new XML (o.embedCode);
+				trace (o.embedCode);
+				
+				swfContainer.removeAllChildren();
+				try
+				{
+					trace ("UNLOAD");
+					swfLoader.loaderInfo.addEventListener(Event.UNLOAD, loadContent);
+					swfLoader.loaderInfo.loader.unload();
+					
+				}catch (e) 
+				{
+					loadContent (x);
+				 }
+				
+			}
+			
+			private function loadContent (x:XML)
+			{
+				swfLoader = new SWFLoader ();
+				swfLoader.width = parseInt (x.@width);
+				swfLoader.height = parseInt (x.@height);
+				swfContainer.addChild(swfLoader);
+				
+				trace ("#############URL: " + x.@data.toString ());
+				
+				//Security.allowDomain("s3.amazonaws.com");
+				swfLoader.load("proxy.swf?url=" + escape (x.@data.toString ()));
+				
+				
+				
+			}
+			
+		]]>
+	</mx:Script>
+		<mx:Canvas borderColor="#000000" width="680" height="469" left="10" top="10" borderStyle="solid">
+			
+		
+		<mx:TextInput id="criteriaText" left="10" top="10" width="276" height="22"/>
+		<mx:ComboBox id="criteriaCombo" selectedIndex="0" top="10" right="308" width="78" height="22">
+			<mx:Array>
+				<mx:String id="user">User</mx:String>
+				<mx:String id="group">Group</mx:String>
+				<mx:String id="tag">Tag</mx:String>
+			</mx:Array>
+		</mx:ComboBox>
+		<mx:Button id="searchButton" label="Search" click="search ()" top="10" width="143" x="380" height="22"/>
+	
+		<mx:List id="slideList" change="loadSlide (event)" labelField="title" top="40" left="8" bottom="0" width="216"/>		
+		<mx:HBox id="swfContainer" top="60" width="429" height="355" x="232"/>	
+		<mx:HRule left="0" top="34" right="0" bottom="433"/>
+	</mx:Canvas>
+		<mx:Form top="10" right="37" height="116" defaultButton="{selectButton}"  width="365">
+				<mx:FormItem label="Username" required="true">
+						<mx:TextInput id="userName"/>
+				</mx:FormItem>
+				<mx:FormItem label="Password" required="true">
+					<mx:TextInput id="password" displayAsPassword="true" />
+				</mx:FormItem>
+				<mx:FormItem width="237" horizontalAlign="right">
+				<mx:Button id="selectButton" click="select ()" label="Select File to Upload" />
+				</mx:FormItem>
+		</mx:Form>
+		<mx:Form id="detailsForm" top="144" right="37" height="221" defaultButton="{uploadButton}"  width="365" visible="true">
+				<mx:FormHeading label="Enter SlideShow Details" />
+				<mx:FormItem label="Title" required="true" >
+						<mx:TextInput id="title"/>
+				</mx:FormItem>
+				<mx:FormItem label="Description" required="false">
+					<mx:TextInput id="description" />
+				</mx:FormItem>
+							<mx:FormItem label="Tags" required="false">
+					<mx:TextInput id="tags" />
+				</mx:FormItem>
+				<mx:FormItem label="Is source file public?" width="305">
+					<mx:RadioButtonGroup id="isPulic">
+						
+					</mx:RadioButtonGroup>
+					<mx:RadioButton groupName="isPublic" label="Yes" selected="true" value="Y"/>
+						<mx:RadioButton groupName="isPublic" label="No" value="N"/>
+				</mx:FormItem>
+				<mx:FormItem width="298" horizontalAlign="right">
+				<mx:Button id="uploadButton" click="upload ()" label="Upload" />
+				</mx:FormItem>
+		</mx:Form>
+		<mx:TextArea id="console" fontSize="12" left="10" right="10" height="155" bottom="10"/>
+</mx:Application>

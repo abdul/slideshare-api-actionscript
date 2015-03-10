@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="490" height="359">
+	<mx:Script>
+	<![CDATA[	
+		import mx.events.DataGridEvent;
+		import mx.events.DataGridEventReason;
+		import mx.collections.ArrayCollection;
+		
+		[Bindable]
+		private var initDG:Array;
+		
+		
+	
+			// Define the event listener.
+			public function processData(event:DataGridEvent):void 
+			{
+				// Check the reason for the event.
+				if (event.reason == DataGridEventReason.CANCELLED)
+				{
+					// Do not update cell.
+					return;
+				}
+				if(event.dataField == "metadata")
+				{
+					// Disable copying data back to the control.
+					event.preventDefault();
+					
+					myGrid.editedItemRenderer.data.title =
+					UploadItem(DataGrid(event.target).itemEditorInstance).title.text;
+					
+					myGrid.editedItemRenderer.data.tags =
+					UploadItem(DataGrid(event.target).itemEditorInstance).tags.text;
+					myGrid.editedItemRenderer.data.description =
+					UploadItem(DataGrid(event.target).itemEditorInstance).description.text;
+					myGrid.editedItemRenderer.data.isPublic =
+					UploadItem(DataGrid(event.target).itemEditorInstance).isPublic.selected;
+										
+					myGrid.destroyItemEditor();
+					
+					
+					myGrid.dataProvider.itemUpdated(event.itemRenderer.data);
+				}
+			}	
+	]]>
+	</mx:Script>
+	<mx:DataGrid id="myGrid"
+		rowHeight="75"
+		dataProvider="{initDG}"
+		editable="true"
+		itemEditEnd="processData(event);">
+		<mx:columns>
+			<mx:DataGridColumn dataField="File Name" editable="false"/>
+				<mx:DataGridColumn dataField="metadata" width="150"
+				itemEditor="UploadItem">
+				<mx:itemRenderer>
+					<mx:Component>
+						<mx:Text selectable="false" width="100%"
+							text="{data.title}, {data.tags}, public:{data.isPublic}"/>
+					</mx:Component>
+				</mx:itemRenderer>
+			</mx:DataGridColumn>
+		</mx:columns>
+	</mx:DataGrid>
+</mx:WindowedApplication>
